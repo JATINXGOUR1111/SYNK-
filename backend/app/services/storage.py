@@ -62,14 +62,17 @@ def read_upload(file: UploadFile) -> tuple[bytes, str, str, str]:
 
 def save_bytes(data: bytes, ext: str, content_type: str) -> str:
     name = f"{uuid.uuid4().hex}{ext}"
-    if settings.STORAGE_BACKEND == "s3":
-        import boto3
-        s3 = boto3.client("s3", endpoint_url=settings.S3_ENDPOINT or None, aws_access_key_id=settings.S3_KEY,
-                          aws_secret_access_key=settings.S3_SECRET)
-        s3.put_object(Bucket=settings.S3_BUCKET, Key=name, Body=data, ContentType=content_type)
-        if settings.S3_PUBLIC_URL:
-            return f"{settings.S3_PUBLIC_URL.rstrip('/')}/{name}"
-        return f"{settings.S3_ENDPOINT.rstrip('/')}/{settings.S3_BUCKET}/{name}"
+    if settings.STORAGE_BACKEND == "s3" and settings.S3_BUCKET and settings.S3_KEY and settings.S3_SECRET:
+        try:
+            import boto3
+            s3 = boto3.client("s3", endpoint_url=settings.S3_ENDPOINT or None, aws_access_key_id=settings.S3_KEY,
+                              aws_secret_access_key=settings.S3_SECRET)
+            s3.put_object(Bucket=settings.S3_BUCKET, Key=name, Body=data, ContentType=content_type)
+            if settings.S3_PUBLIC_URL:
+                return f"{settings.S3_PUBLIC_URL.rstrip('/')}/{name}"
+            return f"{settings.S3_ENDPOINT.rstrip('/')}/{settings.S3_BUCKET}/{name}"
+        except Exception:
+            pass  # Fallback to local storage
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     with open(os.path.join(settings.UPLOAD_DIR, name), "wb") as f:
         f.write(data)

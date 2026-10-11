@@ -34,9 +34,8 @@ services:
         sync: false          # this service's public URL
       - key: AUTO_SEED
         value: "true"
-      # Render's disk is ephemeral: use object storage for uploads in production.
       - key: STORAGE_BACKEND
-        value: s3
+        value: local
       - key: S3_BUCKET
         sync: false
       - key: S3_ENDPOINT
