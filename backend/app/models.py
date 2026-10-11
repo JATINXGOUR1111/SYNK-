@@ -253,3 +253,13 @@ class UploadedFile(Base):
     data: Mapped[bytes] = mapped_column(LargeBinary)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=now)
 
+
+class PasswordResetCode(Base):
+    __tablename__ = "password_reset_codes"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(255), index=True)
+    code: Mapped[str] = mapped_column(String(32))
+    expires_at: Mapped[datetime] = mapped_column(UTCDateTime)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=now)
+
+

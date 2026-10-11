@@ -1,9 +1,11 @@
+from datetime import datetime, timedelta, timezone
+import random
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from ..db import get_db
-from ..models import User, CreatorProfile
-from ..schemas import RegisterIn, LoginIn, UpdateMeIn
+from ..models import User, CreatorProfile, PasswordResetCode
+from ..schemas import RegisterIn, LoginIn, UpdateMeIn, ForgotPasswordIn, ResetPasswordIn
 from ..security import hash_password, verify_password, create_token, get_current_user
 from ..ratelimit import auth_limit
 from ..serializers import user_me
@@ -38,6 +40,53 @@ def login(data: LoginIn, db: Session = Depends(get_db)):
     if not u or not verify_password(data.password, u.password_hash):
         raise HTTPException(401, "Incorrect email or password.")
     return {"token": create_token(u.id), "user": user_me(u)}
+
+
+@router.post("/forgot-password", dependencies=[Depends(auth_limit)])
+def forgot_password(data: ForgotPasswordIn, db: Session = Depends(get_db)):
+    u = db.scalar(select(User).where(func.lower(User.email) == data.email.lower()))
+    if not u:
+        raise HTTPException(404, "No account found with this email.")
+    code = f"{random.randint(100000, 999999)}"
+    now = datetime.now(timezone.utc)
+    expires = now + timedelta(minutes=15)
+    for old in db.scalars(select(PasswordResetCode).where(func.lower(PasswordResetCode.email) == data.email.lower())).all():
+        db.delete(old)
+    db.add(PasswordResetCode(email=u.email.lower(), code=code, expires_at=expires))
+    db.commit()
+    return {
+        "ok": True,
+        "message": f"Reset code generated: {code} (valid for 15 minutes).",
+        "code": code,
+        "email": u.email
+    }
+
+
+@router.post("/reset-password", dependencies=[Depends(auth_limit)])
+def reset_password(data: ResetPasswordIn, db: Session = Depends(get_db)):
+    now = datetime.now(timezone.utc)
+    rc = db.scalar(select(PasswordResetCode).where(
+        func.lower(PasswordResetCode.email) == data.email.lower(),
+        PasswordResetCode.code == data.code.strip(),
+        PasswordResetCode.expires_at > now
+    ))
+    if not rc:
+        raise HTTPException(400, "Invalid or expired reset code.")
+    u = db.scalar(select(User).where(func.lower(User.email) == data.email.lower()))
+    if not u:
+        raise HTTPException(404, "User account not found.")
+    u.password_hash = hash_password(data.new_password)
+    for old in db.scalars(select(PasswordResetCode).where(func.lower(PasswordResetCode.email) == data.email.lower())).all():
+        db.delete(old)
+    db.commit()
+    db.refresh(u)
+    return {
+        "ok": True,
+        "token": create_token(u.id),
+        "user": user_me(u),
+        "message": "Password reset successfully. You are now logged in."
+    }
+
 
 
 @router.get("/me")

@@ -20,7 +20,7 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export default function ProfileHeader({ u, onFollowChange, onUpdated }: { u: UserFull; onFollowChange: (f: boolean) => void; onUpdated: (patch: Partial<UserFull>) => void }) {
-  const { user, setUser } = useAuth();
+  const { user, setUser, logout } = useAuth();
   const router = useRouter();
   const toast = useToast();
   const need = useRequireLogin();
@@ -64,7 +64,25 @@ export default function ProfileHeader({ u, onFollowChange, onUpdated }: { u: Use
                 <Icon name="image" className="h-4 w-4" />
               </ImageUploadButton>)}
           </div>
-          {u.is_me && <div className="pb-1"><Link href="/settings" className="btn-outline btn-sm">Edit profile</Link></div>}
+          {u.is_me && (
+            <div className="flex flex-wrap items-center gap-2 pb-1">
+              <Link href="/settings" className="btn-outline btn-sm">Edit profile</Link>
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm("Are you sure you want to log out?")) {
+                    logout();
+                    router.push("/login");
+                  }
+                }}
+                className="btn-outline btn-sm !border-rose-300 !text-rose-600 hover:!bg-rose-50 dark:!border-rose-900/60 dark:!text-rose-400 dark:hover:!bg-rose-950/30 inline-flex items-center gap-1.5"
+                aria-label="Log out"
+              >
+                <Icon name="logout" className="h-3.5 w-3.5" />
+                <span>Log out</span>
+              </button>
+            </div>
+          )}
         </div>
         <div className="mt-4">
           <div className="flex flex-wrap items-center gap-2"><h1 className="text-2xl font-bold tracking-tight">{u.name}</h1>{u.verified && <VerifiedTick />}<RoleBadge role={u.role} /></div>

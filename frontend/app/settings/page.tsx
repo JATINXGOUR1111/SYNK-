@@ -1,5 +1,6 @@
 "use client";
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { useAuth, useToast } from "@/components/Providers";
 import { api, ApiError, mediaUrl } from "@/lib/api";
@@ -15,7 +16,8 @@ function Multi({ label, options, value, onChange }: { label: string; options: st
 }
 
 export default function Settings() {
-  const { user, setUser } = useAuth();
+  const { user, setUser, logout } = useAuth();
+  const router = useRouter();
   const toast = useToast();
   const [acct, setAcct] = useState({ name: "", handle: "", avatar_url: "", company: "" });
   const [p, setP] = useState<Profile | null>(null);
@@ -89,6 +91,26 @@ export default function Settings() {
           <div><label className="label" htmlFor="lk">Links (one per line, http or https)</label><textarea id="lk" className="input" value={p.links.join("\n")} onChange={(e) => up("links", e.target.value.split("\n").map((s) => s.trim()).filter(Boolean))} /></div>
           <button className="btn-primary" disabled={busy === "profile"}>{busy === "profile" ? <Spinner /> : "Save profile"}</button>
         </form>)}
+
+      <section className="card flex items-center justify-between p-5" aria-label="Session">
+        <div>
+          <h2 className="font-semibold text-rose-600 dark:text-rose-400">Account session</h2>
+          <p className="muted text-xs">Sign out of your account on this device.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            if (confirm("Are you sure you want to log out?")) {
+              logout();
+              router.push("/login");
+            }
+          }}
+          className="btn-outline !border-rose-300 !text-rose-600 hover:!bg-rose-50 dark:!border-rose-900/60 dark:!text-rose-400 dark:hover:!bg-rose-950/30 flex items-center gap-1.5"
+        >
+          <Icon name="logout" className="h-4 w-4" />
+          <span>Log out</span>
+        </button>
+      </section>
     </AppShell>
   );
 }

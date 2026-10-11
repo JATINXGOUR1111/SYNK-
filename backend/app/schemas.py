@@ -26,6 +26,17 @@ class LoginIn(BaseModel):
     password: str
 
 
+class ForgotPasswordIn(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordIn(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=4, max_length=32)
+    new_password: str = Field(min_length=8, max_length=72)
+
+
+
 def _http_only(v: str | None) -> str | None:
     if v is None or v == "":
         return None
