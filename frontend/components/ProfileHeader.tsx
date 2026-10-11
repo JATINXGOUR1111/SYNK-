@@ -46,7 +46,7 @@ export default function ProfileHeader({ u, onFollowChange, onUpdated }: { u: Use
   return (
     <header className="card overflow-hidden !p-0">
       <div className="relative h-44 bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 sm:h-60">
-        {u.banner_url && <img src={mediaUrl(u.banner_url)} alt="" className="h-full w-full object-cover" />}
+        {u.banner_url && <img src={mediaUrl(u.banner_url)} alt="" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} className="h-full w-full object-cover" />}
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10" aria-hidden="true" />
         {u.is_me && (
           <ImageUploadButton kind="banner" ariaLabel="Change cover photo" onUploaded={(url) => setImage("banner_url", url)}

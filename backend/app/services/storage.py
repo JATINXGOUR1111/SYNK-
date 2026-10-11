@@ -72,8 +72,21 @@ def save_bytes(data: bytes, ext: str, content_type: str) -> str:
                 return f"{settings.S3_PUBLIC_URL.rstrip('/')}/{name}"
             return f"{settings.S3_ENDPOINT.rstrip('/')}/{settings.S3_BUCKET}/{name}"
         except Exception:
-            pass  # Fallback to local storage
+            pass  # Fallback to database/local storage
+
+    # Always persist in database so Render's ephemeral disk never loses uploads
+    try:
+        from ..db import SessionLocal
+        from ..models import UploadedFile
+        with SessionLocal() as db:
+            db.add(UploadedFile(name=name, content_type=content_type, data=data))
+            db.commit()
+    except Exception as e:
+        import logging
+        logging.getLogger("creatormatch").warning("Failed to persist file in DB: %s", e)
+
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
     with open(os.path.join(settings.UPLOAD_DIR, name), "wb") as f:
         f.write(data)
     return f"/uploads/{name}"  # relative: the frontend prefixes the API origin, so URLs survive host/port changes
+

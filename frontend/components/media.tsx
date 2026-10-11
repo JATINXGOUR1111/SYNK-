@@ -10,6 +10,7 @@ export function VideoPlayer({ src, alt, className, autoAdvance, fit = "cover" }:
   const ref = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(false);
+  const [failed, setFailed] = useState(false);
   // autoplay-on-scroll
   useEffect(() => {
     const v = ref.current;
@@ -20,9 +21,19 @@ export function VideoPlayer({ src, alt, className, autoAdvance, fit = "cover" }:
     io.observe(v);
     return () => io.disconnect();
   }, [src]);
+  if (failed) {
+    return (
+      <div className={cn("relative flex h-full min-h-[280px] w-full flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-6 text-center text-white", className)}>
+        <Icon name="video" className="mb-2 h-10 w-10 text-violet-400 opacity-80" />
+        <p className="text-sm font-semibold">Video preview unavailable</p>
+        <p className="mt-1 line-clamp-2 text-xs text-white/60">{alt}</p>
+      </div>
+    );
+  }
   return (
     <div className={cn("relative bg-black", className)}>
       <video ref={ref} src={mediaUrl(src)} poster={poster} muted={muted} loop={!autoAdvance} playsInline preload="metadata" aria-label={alt}
+        onError={() => setFailed(true)}
         onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={autoAdvance}
         onClick={() => (ref.current?.paused ? ref.current.play() : ref.current?.pause())} className={cn("h-full w-full", fit === "cover" ? "object-cover" : "object-contain")} />
       {!playing && <span className="pointer-events-none absolute inset-0 flex items-center justify-center"><span className="rounded-full bg-black/50 p-4 text-white"><Icon name="play" filled className="h-6 w-6" /></span></span>}

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from sqlalchemy import (JSON, DateTime, Float, ForeignKey, Index, Integer, String, Text,
-                        UniqueConstraint, Boolean, TypeDecorator)
+                        UniqueConstraint, Boolean, TypeDecorator, LargeBinary)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .db import Base
 
@@ -243,3 +243,13 @@ class Notification(Base):
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=now)
     actor: Mapped[User | None] = relationship(foreign_keys=[actor_id])
     __table_args__ = (Index("ix_notifications_user_read", "user_id", "read_at"),)
+
+
+class UploadedFile(Base):
+    __tablename__ = "uploaded_files"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    content_type: Mapped[str] = mapped_column(String(100))
+    data: Mapped[bytes] = mapped_column(LargeBinary)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=now)
+
