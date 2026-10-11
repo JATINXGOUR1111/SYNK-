@@ -31,8 +31,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="CreatorMatch API", version="1.0.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=settings.cors_list, allow_credentials=True,
-                   allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_list,
+    allow_origin_regex=r"https://.*\.vercel\.app|http://localhost:\d+",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 api = APIRouter(prefix="/api")
 for r in (auth, users, creators, posts, briefs, proposals, messages, notifications):
