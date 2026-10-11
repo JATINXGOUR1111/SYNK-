@@ -1,0 +1,49 @@
+databases:
+  - name: creatormatch-db
+    plan: free
+    databaseName: creatormatch
+    user: creatormatch
+
+services:
+  - type: web
+    name: creatormatch-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt && alembic upgrade head
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: creatormatch-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-4-5
+      - key: VOYAGE_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false          # set to your Vercel URL, e.g. https://creatormatch.vercel.app
+      - key: PUBLIC_BASE_URL
+        sync: false          # this service's public URL
+      - key: AUTO_SEED
+        value: "true"
+      # Render's disk is ephemeral: use object storage for uploads in production.
+      - key: STORAGE_BACKEND
+        value: s3
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_KEY
+        sync: false
+      - key: S3_SECRET
+        sync: false
+      - key: S3_PUBLIC_URL
+        sync: false

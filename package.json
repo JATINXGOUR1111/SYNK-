@@ -1,0 +1,13 @@
+{
+  "name": "synk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Synk - A social, AI-native marketplace for AI creators",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "start": "npm --prefix frontend run start",
+    "lint": "npm --prefix frontend run lint",
+    "install:frontend": "npm --prefix frontend install"
+  }
+}

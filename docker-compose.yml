@@ -1,0 +1,49 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: creatormatch
+      POSTGRES_PASSWORD: creatormatch
+      POSTGRES_DB: creatormatch
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U creatormatch -d creatormatch"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://creatormatch:creatormatch@db:5432/creatormatch
+      SECRET_KEY: ${SECRET_KEY:-dev-only-secret-change-me-dev-only-secret}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-5}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
+      CORS_ORIGINS: http://localhost:3000
+      PUBLIC_BASE_URL: http://localhost:8000
+      UPLOAD_DIR: /app/uploads
+      AUTO_SEED: "true"
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
+  uploads:
