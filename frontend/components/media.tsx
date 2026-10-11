@@ -90,25 +90,66 @@ export function MediaCarousel({ media, alt, onDoubleLike }: { media: MediaItem[]
   const [heart, setHeart] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const lastTap = useRef(0);
+
+  const audioTrack = useMemo(() => media.find((m) => m.type === "audio"), [media]);
+  const visualMedia = useMemo(() => media.filter((m) => m.type !== "audio"), [media]);
+  const displayItems = visualMedia.length > 0 ? visualMedia : media;
+
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [audioPlaying, setAudioPlaying] = useState(false);
+
   function like() { onDoubleLike?.(); setHeart(true); setTimeout(() => setHeart(false), 800); }
   function tap() { const n = Date.now(); if (n - lastTap.current < 300) like(); lastTap.current = n; }
   if (!media.length) return null;
+
   return (
     <div className="relative overflow-hidden bg-slate-100 dark:bg-slate-800" onDoubleClick={like} onTouchEnd={tap}>
+      {visualMedia.length > 0 && audioTrack && (
+        <>
+          <audio
+            ref={audioRef}
+            src={mediaUrl(audioTrack.url)}
+            preload="metadata"
+            loop
+            onEnded={() => setAudioPlaying(false)}
+          />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              const a = audioRef.current;
+              if (!a) return;
+              if (a.paused) {
+                a.play().catch(() => undefined);
+                setAudioPlaying(true);
+              } else {
+                a.pause();
+                setAudioPlaying(false);
+              }
+            }}
+            aria-label={audioPlaying ? "Pause soundtrack" : "Play soundtrack"}
+            className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5 rounded-full bg-black/75 px-3 py-1.5 text-xs font-medium text-white shadow-lg backdrop-blur-md transition hover:bg-black/90 active:scale-95"
+          >
+            <span className={cn("text-xs", audioPlaying && "animate-pulse")}>🎵</span>
+            <span>{audioPlaying ? "Playing soundtrack" : "Soundtrack"}</span>
+            <Icon name={audioPlaying ? "pause" : "play"} filled className="h-3 w-3 ml-0.5" />
+          </button>
+        </>
+      )}
       <div ref={scroller} className="hide-scroll flex snap-x snap-mandatory overflow-x-auto"
         onScroll={(e) => setIdx(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}>
-        {media.map((m, i) => (
+        {displayItems.map((m, i) => (
           <div key={i} className={cn("w-full shrink-0 snap-center", m.type === "audio" ? "h-32" : "aspect-[4/5] max-h-[640px]")}>
-            {m.type === "image" ? <SafeImg src={mediaUrl(m.url)} alt={`${alt} (${i + 1} of ${media.length})`} />
+            {m.type === "image" ? <SafeImg src={mediaUrl(m.url)} alt={`${alt} (${i + 1} of ${displayItems.length})`} />
               : m.type === "video" ? <VideoPlayer src={m.url} alt={alt} className="h-full w-full" /> : <AudioPlayer src={m.url} label={alt} />}
           </div>))}
       </div>
       {heart && <span className="pointer-events-none absolute inset-0 flex items-center justify-center"><Icon name="heart" filled className="h-24 w-24 animate-bigheart text-white drop-shadow-lg" /></span>}
-      {media.length > 1 && (<>
-        <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1" aria-hidden="true">{media.map((_, i) => <span key={i} className={cn("h-1.5 w-1.5 rounded-full", i === idx ? "bg-white" : "bg-white/50")} />)}</div>
-        <span className="absolute right-3 top-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">{idx + 1}/{media.length}</span>
+      {displayItems.length > 1 && (<>
+        <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1" aria-hidden="true">{displayItems.map((_, i) => <span key={i} className={cn("h-1.5 w-1.5 rounded-full", i === idx ? "bg-white" : "bg-white/50")} />)}</div>
+        <span className="absolute right-3 top-3 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">{idx + 1}/{displayItems.length}</span>
         {idx > 0 && <button aria-label="Previous media" className="absolute left-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white sm:block" onClick={() => scroller.current?.scrollTo({ left: (idx - 1) * scroller.current.clientWidth, behavior: "smooth" })}><Icon name="back" className="h-4 w-4" /></button>}
-        {idx < media.length - 1 && <button aria-label="Next media" className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white sm:block" onClick={() => scroller.current?.scrollTo({ left: (idx + 1) * scroller.current.clientWidth, behavior: "smooth" })}><Icon name="chevron" className="h-4 w-4" /></button>}
+        {idx < displayItems.length - 1 && <button aria-label="Next media" className="absolute right-2 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/50 p-1.5 text-white sm:block" onClick={() => scroller.current?.scrollTo({ left: (idx + 1) * scroller.current.clientWidth, behavior: "smooth" })}><Icon name="chevron" className="h-4 w-4" /></button>}
       </>)}
     </div>
   );
